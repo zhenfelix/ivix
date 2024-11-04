@@ -10,10 +10,10 @@ import pandas as pd
 from scipy import interpolate
 
 
-shibor_rate = pd.read_csv('E:/VIX_index/ivix-master/shibor.csv',index_col=0,encoding='GBK')
-options_data = pd.read_csv('E:/VIX_index/ivix-master/options.csv',index_col=0,encoding='GBK')
-tradeday = pd.read_csv('E:/VIX_index/ivix-master/tradeday.csv',encoding='GBK')
-true_ivix = pd.read_csv('E:/VIX_index/ivix-master/ivixx.csv',encoding='GBK')
+shibor_rate = pd.read_csv('shibor.csv',index_col=0,encoding='GBK')
+options_data = pd.read_csv('options.csv',index_col=0,encoding='GBK')
+tradeday = pd.read_csv('tradeday.csv',encoding='GBK')
+true_ivix = pd.read_csv('ivixx.csv',encoding='GBK')
 
 #==============================================================================
 # 开始计算ivix部分
@@ -35,7 +35,7 @@ def periodsSplineRiskFreeInterestRate(options, date):
     shibor_date = datetime.strptime(shibor_rate.index[0], "%Y-%m-%d") 
     if date >= shibor_date:
         date_str = shibor_rate.index[0]
-        shibor_values = shibor_rate.ix[0].values
+        shibor_values = shibor_rate.loc[0].values
         #shibor_values = np.asarray(list(map(float,shibor_values)))
     else:
         date_str = date.strftime("%Y-%m-%d") 
@@ -53,7 +53,9 @@ def periodsSplineRiskFreeInterestRate(options, date):
         elif periods[p] < min_period:
             tmp = min_period * 1.00001
         # 此处使用SHIBOR来插值
-        sh = interpolate.spline(period, shibor_values, tmp, order=3)
+        # sh = interpolate.spline(period, shibor_values, tmp, order=3)
+        spline = interpolate.BSpline(period, shibor_values, 3)
+        sh = spline(tmp)
         shibor[p] = sh/100.0
     return shibor
 
@@ -128,17 +130,17 @@ def calSigmaSquare( options, FF, R, T):
         callAll['deltaK'] = index[-1] - index[0]
     else:
         for i in range(1,len(index)-1):
-            callAll['deltaK'].ix[index[i]] = (index[i+1]-index[i-1])/2.0
-        callAll['deltaK'].ix[index[0]] = index[1]-index[0]
-        callAll['deltaK'].ix[index[-1]] = index[-1] - index[-2]
+            callAll['deltaK'].loc[index[i]] = (index[i+1]-index[i-1])/2.0
+        callAll['deltaK'].loc[index[0]] = index[1]-index[0]
+        callAll['deltaK'].loc[index[-1]] = index[-1] - index[-2]
     index = putAll.index
     if len(index) < 3:
         putAll['deltaK'] = index[-1] - index[0]
     else:
         for i in range(1,len(index)-1):
-            putAll['deltaK'].ix[index[i]] = (index[i+1]-index[i-1])/2.0
-        putAll['deltaK'].ix[index[0]] = index[1]-index[0]
-        putAll['deltaK'].ix[index[-1]] = index[-1] - index[-2]
+            putAll['deltaK'].loc[index[i]] = (index[i+1]-index[i-1])/2.0
+        putAll['deltaK'].loc[index[0]] = index[1]-index[0]
+        putAll['deltaK'].loc[index[-1]] = index[-1] - index[-2]
     
     call = callAll[callAll.index > FF]
     put  = putAll[putAll.index < FF]
@@ -156,10 +158,10 @@ def calSigmaSquare( options, FF, R, T):
     else:
         FF_idx = put.index[-1]
         try:
-            if len(putAll.ix[FF_idx].CLOSE.values) > 1:
-                put['CLOSE'].iloc[-1] = (putAll.ix[FF_idx].CLOSE.values[1] + callAll.ix[FF_idx].CLOSE.values[0])/2.0
+            if len(putAll.loc[FF_idx].CLOSE.values) > 1:
+                put['CLOSE'].iloc[-1] = (putAll.loc[FF_idx].CLOSE.values[1] + callAll.loc[FF_idx].CLOSE.values[0])/2.0
         except:
-            put['CLOSE'].iloc[-1] = (putAll.ix[FF_idx].CLOSE + callAll.ix[FF_idx].CLOSE)/2.0
+            put['CLOSE'].iloc[-1] = (putAll.loc[FF_idx].CLOSE + callAll.loc[FF_idx].CLOSE)/2.0
 
         callComponent = call.CLOSE*call.deltaK/call.index/call.index
         putComponent  = put.CLOSE*put.deltaK/put.index/put.index
@@ -218,13 +220,44 @@ for day in tradeday['DateTime']:
     ivix.append(calDayVIX(day))
     #print ivix
     
-from pyecharts import Line
-attr = true_ivix[u'日期'].tolist()
-line = Line(u"中国波指")
-line.add("中证指数发布", attr, true_ivix[u'收盘价(元)'].tolist(), mark_point=["max"])
-line.add("手动计算", attr, ivix, mark_line=["max",'average'])
-line.render('E:/VIX_index/ivix-master/vix.html')
+# from pyecharts import Line
+from pyecharts.charts import Line
+from pyecharts import options as opts
 
+
+# attr = true_ivix[u'日期'].tolist()
+# line = Line(u"中国波指")
+# line.add("中证指数发布", attr, true_ivix[u'收盘价(元)'].tolist(), mark_point=["max"])
+# line.add("手动计算", attr, ivix, mark_line=["max",'average'])
+# line.render('vix.html')
+# Convert your data columns to lists
+attr = true_ivix['日期'].tolist()
+true_ivix_data = true_ivix['收盘价(元)'].tolist()
+ivix_data = ivix  # Assuming ivix is already a list
+
+# Create the line chart
+line = (
+    Line()
+    .add_xaxis(attr)
+    .add_yaxis(
+        "中证指数发布", 
+        true_ivix_data,
+        markpoint_opts=opts.MarkPointOpts(data=[opts.MarkPointItem(type_="max")]),
+    )
+    .add_yaxis(
+        "手动计算",
+        ivix_data,
+        markline_opts=opts.MarkLineOpts(data=[opts.MarkLineItem(type_="max"), opts.MarkLineItem(type_="average")]),
+    )
+    .set_global_opts(
+        title_opts=opts.TitleOpts(title="中国波指"),
+        xaxis_opts=opts.AxisOpts(name="日期"),
+        yaxis_opts=opts.AxisOpts(name="收盘价(元)"),
+    )
+)
+
+# Render to an HTML file
+line.render("vix.html")
 
 
 
