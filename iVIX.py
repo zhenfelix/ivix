@@ -10,10 +10,16 @@ import pandas as pd
 from scipy import interpolate
 
 
-shibor_rate = pd.read_csv('shibor.csv',index_col=0,encoding='GBK')
-options_data = pd.read_csv('options.csv',index_col=0,encoding='GBK')
-tradeday = pd.read_csv('tradeday.csv',encoding='GBK')
-true_ivix = pd.read_csv('ivixx.csv',encoding='GBK')
+# shibor_rate = pd.read_csv('shibor.csv',index_col=0,encoding='GBK')
+shibor_rate = pd.read_csv('shibor.csv',index_col=0)
+
+# options_data = pd.read_csv('options.csv',index_col=0,encoding='GBK')
+options_data = pd.read_csv('options.csv',index_col=0)
+
+# tradeday = pd.read_csv('tradeday.csv',encoding='GBK')
+true_ivix = pd.read_csv('vix50.csv')
+# true_ivix = true_ivix[1000:]
+# true_ivix = pd.read_csv('ivixx.csv',encoding='GBK')
 
 #==============================================================================
 # 开始计算ivix部分
@@ -216,8 +222,13 @@ def calDayVIX(vixDate):
     return 100*np.sqrt(abs(vix)*365.0/30.0)
 
 ivix = []
-for day in tradeday['DateTime']:
-    ivix.append(calDayVIX(day))
+tradeday = true_ivix['日期'].tolist()
+tradeday = list(map(lambda x: '/'.join(list(map(str,map(int,x.split('/'))))), tradeday))
+for day in tradeday:
+    try:
+        ivix.append(calDayVIX(day))
+    except Exception as e:
+        print(e) 
     #print ivix
     
 # from pyecharts import Line
@@ -240,7 +251,7 @@ line = (
     Line()
     .add_xaxis(attr)
     .add_yaxis(
-        "中证指数发布", 
+        "shnyu波动研究所", 
         true_ivix_data,
         markpoint_opts=opts.MarkPointOpts(data=[opts.MarkPointItem(type_="max")]),
     )

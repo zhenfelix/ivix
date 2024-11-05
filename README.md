@@ -1,4 +1,16 @@
 # ivix
+## Module Updated #5
+- [Module Updated #5](https://github.com/Alexdachen/ivix/issues/5)
+- [VIX replication](https://vix.readthedocs.io/en/latest/#rff6015b8fcab-1)
+
+## data source
+- [上证50vix](https://vinsight.shnyu.edu.cn/implied_moments.php?hs300=out300_vix_30&a50=out_vix_30&zz1000=out_vix_30)
+- [银行间拆借利率](https://github.com/akfamily/akshare/blob/main/docs/data/interest_rate/interest_rate.md#%E9%93%B6%E8%A1%8C%E9%97%B4%E6%8B%86%E5%80%9F%E5%88%A9%E7%8E%87)
+- [期权概况-获取期权合约信息](https://www.joinquant.com/help/api/help#JQData:%E6%9C%9F%E6%9D%83%E6%A6%82%E5%86%B5)
+- [期权行情日数据-上证50指数-上交所-根据合约信息获取日行情](https://akshare.akfamily.xyz/data/option/option.html#id25)
+
+
+
 ## 中国波指的计算
 
 vix指数的计算方法如下（ivix也是一样）：
